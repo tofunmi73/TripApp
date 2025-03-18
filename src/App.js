@@ -56,7 +56,7 @@ function App() {
             setIsLoading(false);
         } catch (error) {
             console.error('Error processing trip data:', error);
-            setError('Failed to process trip data. Please check the console for details.');
+            setError('Failed to connect to backend API. Please try again.');
             setIsLoading(false);
             setMapIsLoading(false);
         }

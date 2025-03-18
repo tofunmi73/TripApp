@@ -50,6 +50,46 @@ function LogSheet({ tripData, routeData }) {
 
   
   useEffect(() => {
+    if (canvasRef.current) {
+        resizeCanvas(); // Initial resize
+        window.addEventListener('resize', resizeCanvas); // Resize on window resize
+
+        return () => {
+            window.removeEventListener('resize', resizeCanvas); // Cleanup
+        };
+        }
+    }, []); // Run only once on mount
+
+useEffect(() => {
+    if (canvasRef.current){
+        drawInitialGrid(canvasRef.current);
+        if (logEntries.length > 0) {
+            drawLogEntries(canvasRef.current, logEntries);
+        }
+        drawRemarks(canvasRef.current);
+      }
+  }, [logEntries, remarks])
+
+const resizeCanvas = () => {
+    if (canvasRef.current) {
+        const containerWidth = canvasRef.current.parentElement.offsetWidth;
+        const originalWidth = 800; // Original canvas width
+        const originalHeight = 300; // Original canvas height
+        const aspectRatio = originalHeight / originalWidth;
+
+        canvasRef.current.width = containerWidth;
+        canvasRef.current.height = containerWidth * aspectRatio;
+
+        // Redraw content after resize
+        drawInitialGrid(canvasRef.current);
+        if (logEntries.length > 0) {
+            drawLogEntries(canvasRef.current, logEntries);
+        }
+        drawRemarks(canvasRef.current);
+        }
+    };
+
+  useEffect(() => {
     if (!canvasRef.current) return;
     
     // Initialize the log sheet grid
@@ -399,6 +439,19 @@ function LogSheet({ tripData, routeData }) {
     ctx.stroke();
   };
 
+  const addRemark = (time, location, description) => {
+    const newRemark = { time, location, description };
+    setRemarks([...remarks, newRemark]);
+    console.log("addRemark: Remarks state updated");
+  };
+
+  useEffect(() => {
+    if (canvasRef.current && remarks.length > 0) {
+        console.log("useEffect: Drawing remarks after state change");
+        drawRemarks(canvasRef.current);
+    }
+  }, [remarks]); // Run effect when 'remarks' state changes
+
   const drawRemarks = (canvas) => {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
@@ -406,6 +459,10 @@ function LogSheet({ tripData, routeData }) {
     // Clear existing remarks area
     ctx.fillStyle = '#fff';
     ctx.fillRect(100, 180, width - 120, 200);
+    
+    // // Clear only the area where remarks are drawn
+    // ctx.clearRect(100, 181, width - 120, 199);
+    console.log("drawRemarks: Clearing rectangle");
     
     // Draw remarks
     ctx.fillStyle = '#000';
@@ -416,8 +473,10 @@ function LogSheet({ tripData, routeData }) {
     remarks.forEach((remark, index) => {
       const remarkText = `${remark.time} - ${remark.location}: ${remark.description}`;
       ctx.fillText(remarkText, 110, yPosition);
+      console.log("drawRemarks: Drawing remark at y:", yPosition);
       yPosition += 20; // Space between remarks
     });
+  
   };
   
   const drawLogEntries = (canvas, entries) => {
@@ -566,16 +625,17 @@ function LogSheet({ tripData, routeData }) {
     }
   };
   
-  const addRemark = (time, location, description) => {
-    const newRemark = { time, location, description };
-    const updatedRemarks = [...remarks, newRemark];
-    setRemarks([...remarks, newRemark]);
+  // const addRemark = (time, location, description) => {
+  //   const newRemark = { time, location, description };
+  //   const updatedRemarks = [...remarks, newRemark];
+  //   setRemarks([...remarks, newRemark]);
 
-    // Redraw canvas to show the new remark
-    if (canvasRef.current) {
-      drawRemarks(canvasRef.current);
-    }
-  };
+  //   // Redraw canvas to show the new remark
+  //   if (canvasRef.current) {
+  //     console.log("addRemark: Redrawing canvas after state update");
+  //     drawRemarks(canvasRef.current);
+  //   }
+  // };
   
   // const renderRemarks = () => {
   //   return remarks.map((remark, index) => (
@@ -587,6 +647,7 @@ function LogSheet({ tripData, routeData }) {
   //   ));
   // };
   
+
   return (
     <div className="log-sheet-container">
       
@@ -630,7 +691,7 @@ function LogSheet({ tripData, routeData }) {
       </div>
       
       <div className="log-grid-container">
-        <canvas ref={canvasRef} width="800" height="300"/>
+        <canvas ref={canvasRef}/>
       </div>
       
       <div className="status-controls">

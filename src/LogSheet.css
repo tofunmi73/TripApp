@@ -136,7 +136,11 @@
   flex-direction: column;
   gap: 10px;
 }
-
+.log-grid-container {
+  /* Make the log-grid-container take up full width on screens <= 768px */
+  width: 100%;
+  /* Optionally, you can add padding or margin adjustments here */
+}
 .hours-grid {
   grid-template-columns: 1fr;
 }
@@ -382,6 +386,11 @@
 
 .remark-description {
   color: #495057;
+}
+
+.log-grid-container {
+  width: 100%; /* Default width */
+  overflow-x: auto; /* Enable horizontal scrolling if needed */
 }
 
   
