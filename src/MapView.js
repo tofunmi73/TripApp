@@ -226,7 +226,7 @@ const addFuelStopsToRoute = (routeCoordinates, map) => {
         }
       } catch (error) {
         console.error('Error fetching or drawing routes:', error);
-        setError('Failed to load route data. Please check the console for details.');
+        setError('Failed to load route data. Problem with map API.');
         requestInProgress.current = false;
         setLocalIsLoading(false);
         if (onLoadingChange) {

@@ -70,13 +70,14 @@ useEffect(() => {
       }
   }, [logEntries, remarks])
 
-const resizeCanvas = () => {
+  const resizeCanvas = () => {
     if (canvasRef.current) {
         const containerWidth = canvasRef.current.parentElement.offsetWidth;
         const originalWidth = 800; // Original canvas width
         const originalHeight = 300; // Original canvas height
         const aspectRatio = originalHeight / originalWidth;
 
+        // Calculate base height
         let canvasHeight = containerWidth * aspectRatio;
 
         // Adjust height for smaller screens (mobile)
@@ -85,7 +86,7 @@ const resizeCanvas = () => {
         }
 
         canvasRef.current.width = containerWidth;
-        canvasRef.current.height = containerWidth * aspectRatio;
+        canvasRef.current.height = canvasHeight; // Use the adjusted height
 
         // Redraw content after resize
         drawInitialGrid(canvasRef.current);
@@ -93,8 +94,8 @@ const resizeCanvas = () => {
             drawLogEntries(canvasRef.current, logEntries);
         }
         drawRemarks(canvasRef.current);
-        }
-    };
+    }
+};
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -447,9 +448,32 @@ const resizeCanvas = () => {
   };
 
   const addRemark = (time, location, description) => {
-    const newRemark = { time, location, description };
+    // Validate time format (HH:MM)
+    const timePattern = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    
+    let formattedTime = time;
+    if (!timePattern.test(time)) {
+      // Try to format it
+      if (time.length === 4) {
+        formattedTime = time.slice(0, 2) + ':' + time.slice(2);
+      } else if (time.length === 3) {
+        formattedTime = '0' + time.slice(0, 1) + ':' + time.slice(1);
+      } else if (time.length === 1 || time.length === 2) {
+        formattedTime = time.padStart(2, '0') + ':00';
+      } else {
+        // Invalid time format
+        alert('Please enter time in HH:MM format');
+        return;
+      }
+    }
+    
+    const newRemark = { time: formattedTime, location, description };
     setRemarks([...remarks, newRemark]);
-    console.log("addRemark: Remarks state updated");
+    
+    // Redraw canvas to show the new remark
+    if (canvasRef.current) {
+      drawRemarks(canvasRef.current);
+    }
   };
 
   useEffect(() => {
@@ -463,27 +487,55 @@ const resizeCanvas = () => {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     
-    // Clear existing remarks area
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(100, 180, width - 120, 200);
+    // Clear existing remarks area - adjust based on canvas size
+    const remarksY = 180;
+    const remarksAreaHeight = canvas.height - remarksY - 10;
     
-    // // Clear only the area where remarks are drawn
-    // ctx.clearRect(100, 181, width - 120, 199);
-    console.log("drawRemarks: Clearing rectangle");
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(100, remarksY, width - 120, remarksAreaHeight);
+    
+    // Draw remarks header
+    ctx.fillStyle = '#000';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText('REMARKS', 90, remarksY);
+    
+    // Draw a line for the remarks section
+    ctx.beginPath();
+    ctx.moveTo(100, remarksY);
+    ctx.lineTo(width - 20, remarksY);
+    ctx.stroke();
     
     // Draw remarks
     ctx.fillStyle = '#000';
     ctx.font = '12px Arial';
     ctx.textAlign = 'left';
     
-    let yPosition = 200;
+    let yPosition = remarksY + 20;
     remarks.forEach((remark, index) => {
       const remarkText = `${remark.time} - ${remark.location}: ${remark.description}`;
-      ctx.fillText(remarkText, 110, yPosition);
-      console.log("drawRemarks: Drawing remark at y:", yPosition);
-      yPosition += 20; // Space between remarks
+      
+      // Ensure text wrapping for long remarks on smaller screens
+      const maxWidth = width - 130;
+      const words = remarkText.split(' ');
+      let line = '';
+      
+      for (let i = 0; i < words.length; i++) {
+        const testLine = line + words[i] + ' ';
+        const metrics = ctx.measureText(testLine);
+        
+        if (metrics.width > maxWidth && i > 0) {
+          ctx.fillText(line, 110, yPosition);
+          line = words[i] + ' ';
+          yPosition += 20;
+        } else {
+          line = testLine;
+        }
+      }
+      
+      ctx.fillText(line, 110, yPosition);
+      yPosition += 25; // Space between remarks
     });
-  
   };
   
   const drawLogEntries = (canvas, entries) => {
@@ -654,6 +706,40 @@ const resizeCanvas = () => {
   //   ));
   // };
   
+  const formatTimeInput = (inputElement) => {
+    inputElement.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+      
+      if (value.length > 4) {
+        value = value.slice(0, 4);
+      }
+      
+      // Format with a colon
+      if (value.length > 2) {
+        value = value.slice(0, 2) + ':' + value.slice(2);
+      }
+      
+      // Validate hours (0-23) and minutes (0-59)
+      if (value.includes(':')) {
+        const [hours, minutes] = value.split(':');
+        if (parseInt(hours) > 23) {
+          value = '23:' + minutes;
+        }
+        if (parseInt(minutes) > 59) {
+          value = hours + ':59';
+        }
+      }
+      
+      e.target.value = value;
+    });
+  };
+
+  useEffect(() => {
+    const timeInput = document.getElementById('remark-time');
+    if (timeInput) {
+      formatTimeInput(timeInput);
+    }
+  }, []);
 
   return (
     <div className="log-sheet-container">
@@ -751,41 +837,50 @@ const resizeCanvas = () => {
       </div>
       
       <div className="remarks-section">
-        {/* <h4>Remarks:</h4>
-        <div className="remarks-list">
-          {renderRemarks()}
-        </div> */}
-        <div className="add-remark-form">
-          <input
-            type="text"
-            placeholder="Time (HH:MM)"
-            id="remark-time"
-          />
-          <input
-            type="text"
-            placeholder="Location"
-            id="remark-location"
-          />
-          <input
-            type="text"
-            placeholder="Description"
-            id="remark-description"
-          />
-          <button 
-            onClick={() => {
-              const time = document.getElementById('remark-time').value;
-              const location = document.getElementById('remark-location').value;
-              const description = document.getElementById('remark-description').value;
-              if (time && location && description) {
-                addRemark(time, location, description);
-                document.getElementById('remark-time').value = '';
-                document.getElementById('remark-location').value = '';
-                document.getElementById('remark-description').value = '';
-              }
-            }}>
-            Add Remark
-          </button>
-        </div>
+      <h4>Add Remark:</h4>
+      <div className="add-remark-form">
+        <input
+          type="text"
+          placeholder="HH:MM"
+          id="remark-time"
+          maxLength="5"
+        />
+        <input
+          type="text"
+          placeholder="Location"
+          id="remark-location"
+        />
+        <input
+          type="text"
+          placeholder="Description"
+          id="remark-description"
+        />
+        <button 
+          onClick={() => {
+            const time = document.getElementById('remark-time').value;
+            const location = document.getElementById('remark-location').value;
+            const description = document.getElementById('remark-description').value;
+            if (time && location && description) {
+              addRemark(time, location, description);
+              document.getElementById('remark-time').value = '';
+              document.getElementById('remark-location').value = '';
+              document.getElementById('remark-description').value = '';
+            } else {
+              alert('Please fill in all fields');
+            }
+          }}>
+          Add Remark
+        </button>
+      </div>
+      <div className="remarks-list">
+        {remarks.map((remark, index) => (
+          <div key={index} className="remark-item">
+            <span className="remark-time">{remark.time}</span>
+            <span className="remark-location">{remark.location}</span>
+            <span className="remark-description">{remark.description}</span>
+          </div>
+        ))}
+      </div>
       </div>
       
       
