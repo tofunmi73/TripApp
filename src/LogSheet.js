@@ -51,19 +51,6 @@ function LogSheet({ tripData, routeData }) {
   
   useEffect(() => {
     if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const resizeCanvas = () => {
-      const container = canvas.parentElement;
-      canvas.width = container.clientWidth;
-      canvas.height = Math.min(400, container.clientWidth * 0.5); // Maintain aspect ratio
-    };
-    
-    // Initial sizing
-    resizeCanvas();
-    
-    // Resize on window resize
-    window.addEventListener('resize', resizeCanvas);
     
     // Initialize the log sheet grid
     drawInitialGrid(canvasRef.current);
@@ -80,8 +67,6 @@ function LogSheet({ tripData, routeData }) {
     if (tripData && routeData) {
       initializeFromRouteData(tripData, routeData);
     }
-
-    return () => window.removeEventListener('resize', resizeCanvas);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripData, routeData]);
   
@@ -645,7 +630,7 @@ function LogSheet({ tripData, routeData }) {
       </div>
       
       <div className="log-grid-container">
-        <canvas ref={canvasRef} />
+        <canvas ref={canvasRef} width="800" height="300"/>
       </div>
       
       <div className="status-controls">
