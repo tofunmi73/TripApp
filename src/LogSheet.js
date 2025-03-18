@@ -51,6 +51,19 @@ function LogSheet({ tripData, routeData }) {
   
   useEffect(() => {
     if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const resizeCanvas = () => {
+      const container = canvas.parentElement;
+      canvas.width = container.clientWidth;
+      canvas.height = Math.min(400, container.clientWidth * 0.5); // Maintain aspect ratio
+    };
+    
+    // Initial sizing
+    resizeCanvas();
+    
+    // Resize on window resize
+    window.addEventListener('resize', resizeCanvas);
     
     // Initialize the log sheet grid
     drawInitialGrid(canvasRef.current);
@@ -67,6 +80,8 @@ function LogSheet({ tripData, routeData }) {
     if (tripData && routeData) {
       initializeFromRouteData(tripData, routeData);
     }
+
+    return () => window.removeEventListener('resize', resizeCanvas);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripData, routeData]);
   
@@ -296,94 +311,6 @@ function LogSheet({ tripData, routeData }) {
     
     return entries;
   };
-
-  // const generateSampleLogEntries = (tripData, drivingHours, startTime) => {
-    
-  //   const entries = [];
-  //   let currentTime = startTime;
-    
-    
-  //   entries.push({
-  //     type: 'off-duty',
-  //     status: 'Off Duty',
-  //     location: 'Richmond, VA',
-  //     description: 'Off duty',
-  //     startTime: '00:00',
-  //     endTime: '06:00',
-  //   });
-    
-  //   // Sleeper berth period
-  //   entries.push({
-  //     type: 'sleeper',
-  //     status: 'Sleeper Berth',
-  //     location: 'Richmond, VA',
-  //     description: 'Rest period',
-  //     startTime: '06:00',
-  //     endTime: '07:45',
-  //   });
-    
-  //   // Driving period
-  //   entries.push({
-  //     type: 'driving',
-  //     status: 'Driving',
-  //     location: 'Fredericksburg, VA',
-  //     description: 'Driving to pickup',
-  //     startTime: '07:45',
-  //     endTime: '10:30',
-  //   });
-    
-  //   // On duty period
-  //   entries.push({
-  //     type: 'on-duty',
-  //     status: 'On Duty (Not Driving)',
-  //     location: 'Baltimore, MD',
-  //     description: 'Loading cargo',
-  //     startTime: '10:30',
-  //     endTime: '12:00',
-  //   });
-    
-  //   // More driving
-  //   entries.push({
-  //     type: 'driving',
-  //     status: 'Driving',
-  //     location: 'Baltimore, MD',
-  //     description: 'Driving to destination',
-  //     startTime: '12:00',
-  //     endTime: '15:00',
-  //   });
-    
-  //   // On duty again
-  //   entries.push({
-  //     type: 'on-duty',
-  //     status: 'On Duty (Not Driving)',
-  //     location: 'Philadelphia, PA',
-  //     description: 'Unloading cargo',
-  //     startTime: '15:00',
-  //     endTime: '16:30',
-  //   });
-    
-  //   // More driving
-  //   entries.push({
-  //     type: 'driving',
-  //     status: 'Driving',
-  //     location: 'Philadelphia, PA',
-  //     description: 'Driving to final destination',
-  //     startTime: '16:30',
-  //     endTime: '19:00',
-  //   });
-    
-  //   // Off duty end period
-  //   entries.push({
-  //     type: 'off-duty',
-  //     status: 'Off Duty',
-  //     location: 'Newark, NJ',
-  //     description: 'Off duty',
-  //     startTime: '19:00',
-  //     endTime: '23:59',
-  //   });
-    
-  //   return entries;
-  // };
   
   const drawInitialGrid = (canvas) => {
     const ctx = canvas.getContext('2d');
@@ -718,7 +645,7 @@ function LogSheet({ tripData, routeData }) {
       </div>
       
       <div className="log-grid-container">
-        <canvas ref={canvasRef} width={800} height={400} />
+        <canvas ref={canvasRef} />
       </div>
       
       <div className="status-controls">
