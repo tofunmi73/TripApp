@@ -77,6 +77,13 @@ const resizeCanvas = () => {
         const originalHeight = 300; // Original canvas height
         const aspectRatio = originalHeight / originalWidth;
 
+        let canvasHeight = containerWidth * aspectRatio;
+
+        // Adjust height for smaller screens (mobile)
+        if (window.innerWidth <= 768) {
+            canvasHeight = canvasHeight * 1.5; // Increase height by 50%
+        }
+
         canvasRef.current.width = containerWidth;
         canvasRef.current.height = containerWidth * aspectRatio;
 
